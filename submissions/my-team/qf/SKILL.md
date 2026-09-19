@@ -106,44 +106,41 @@ two key deliverables by a second, independent route and compare:
 If the two routes disagree beyond the spec's tolerance, the pipeline is wrong.
 Fix it; do not average or pick one.
 
-## Reading the spec for hidden conventions
+## Resolving conventions: the spec decides, then record the choice
 
-Specs in this benchmark are precise. When a phrase admits two readings, the
-reference almost always uses the plainest literal one:
+Most lost tasks are numerical interpretation, not malformed files. Every
+consequential choice must be resolved in this order, and written into the
+checklist with the reason:
 
-- "rebalance monthly" means on the first trading day of each calendar month in
-  the trading window; the signal uses data up to and including the prior day
-- "transaction cost of c bps" is charged on traded notional at each rebalance:
-  cost = c/1e4 × sum(|w_new − w_old|); the first rebalance trades from zero
-- "annualised" uses the factor stated; if none, 252 for daily, 12 for monthly,
-  52 for weekly; calendar-day maths uses 365 unless a day-count is named
-- "z-score cross-sectionally" means per date across assets, ddof as the spec
-  says (default ddof=1 for sample statistics, ddof=0 only when stated)
-- "top N / bottom N" break ties by the sort order the spec gives, else by
-  ticker ascending; sort tickers before any matrix build
-- "maximum drawdown" is peak-to-trough on the cumulative return path from the
-  first trading day, reported as a positive magnitude unless told otherwise
-- allocation, selection, interaction effects follow the Brinson-Fachler
-  variant with benchmark total return unless the spec spells out
-  Brinson-Hood-Beebower; when in doubt, implement the variant the spec's
-  formula shows, symbol by symbol
-- random draws use `numpy.random.default_rng(seed)` with the seed from the
-  params file; draw in the order the spec lists the simulations
-- if the spec mentions `OUTPUT_DIR`, read it with `os.environ.get`; create the
-  directory; never hard-code a different path
+1. The task's own formula, definition, or example. If the spec shows a
+   formula, implement it symbol for symbol. If it names a method or variant,
+   use exactly that one, even if another is more common.
+2. The task's parameter file and data. Frequencies, windows, seeds, costs,
+   day counts, start dates, and thresholds come from there, never from habit.
+   Print each parameter you use next to the value you read.
+3. The plainest literal reading of the spec's words when 1 and 2 are silent.
+   "Monthly" means calendar months present in the data; "first N days for
+   the signal" means trading starts on day N+1; a count counts the events
+   the spec names, nothing more.
+4. Only then a textbook default, and only for things the spec does not
+   touch: sample statistics use ddof=1; annualise daily with 252, monthly
+   with 12, weekly with 52, calendar-day maths with 365; Sharpe with zero
+   risk-free rate; drawdown as a positive magnitude.
+
+Whatever level resolved the choice, add one line to the checklist:
+"<quantity>: <choice> because <spec text | parameter | literal reading |
+default>". If two readings survive step 3, implement the one closest to the
+spec's wording, note the alternative, and check whether any figure the spec
+states (a count, a bound, an example value) discriminates between them.
+
+Fixed mechanics that are not conventions:
+
+- If the spec mentions `OUTPUT_DIR`, read it with `os.environ.get`, create
+  the directory, and never hard-code a different path.
 - JSON numbers must be plain Python `float`/`int`; cast with `float()` and
-  never write NaN; CSV columns in the exact order the spec lists them
-
-## Numeric conventions unless the spec overrides
-
-- Sample standard deviation uses `ddof=1`; annualise with the factor the spec
-  gives (252 for daily equity by default).
-- Sharpe with zero risk-free rate unless a rate is given.
-- Max drawdown reported as a positive magnitude if the spec says so; otherwise
-  follow the spec's sign exactly.
-- Log vs simple returns: use what the spec says; if silent, simple returns for
-  portfolio arithmetic, log returns for volatility estimators that state them.
-- Round only at output time, and only if the spec asks for it.
+  never write NaN; CSV columns in the exact order the spec lists them.
+- Random draws use the seed and generator the spec names; if it names none,
+  `numpy.random.default_rng(seed)` with the seed from the parameter file.
 
 ## Do not
 
